@@ -1,0 +1,43 @@
+FROM golang:1.23-bookworm AS builder
+
+WORKDIR /src
+
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=1 \
+    GOOS=linux \
+    go build \
+    -trimpath \
+    -ldflags="-s -w" \
+    -o /out/login-cli \
+    ./cmd/cli
+
+
+FROM debian:bookworm-slim
+
+RUN useradd \
+    --create-home \
+    --uid 10001 \
+    appuser
+
+WORKDIR /app
+
+COPY --from=builder \
+    /out/login-cli \
+    /app/login-cli
+
+RUN mkdir -p /data && \
+    chown -R appuser:appuser /app /data
+
+USER appuser
+
+ENV DB_PATH=/data/auth.db
+ENV SESSION_TIMEOUT_MINUTES=30
+ENV LOCKOUT_THRESHOLD=5
+ENV LOCKOUT_MINUTES=15
+
+ENTRYPOINT ["/app/login-cli"]

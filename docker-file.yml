@@ -1,0 +1,20 @@
+services:
+
+  cli:
+    build: .
+
+    stdin_open: true
+
+    tty: true
+
+    environment:
+      DB_PATH: /data/auth.db
+      SESSION_TIMEOUT_MINUTES: 30
+      LOCKOUT_THRESHOLD: 5
+      LOCKOUT_MINUTES: 15
+
+    volumes:
+      - auth-data:/data
+
+volumes:
+  auth-data:
